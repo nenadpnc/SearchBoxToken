@@ -12,3 +12,8 @@ body{
     margin: auto;
     text-align: center;
 }
+
+.input-container{
+    width: 90%;
+    display: inline-block;
+}

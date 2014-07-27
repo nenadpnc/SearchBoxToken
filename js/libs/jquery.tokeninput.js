@@ -22,6 +22,7 @@ var DEFAULT_SETTINGS = {
     categoryList: null,
     isCategorySearch: true,
     categoryData: {},
+    spinner: null,
 
 	// Display settings
     hintText: "Type in a search term",
@@ -774,7 +775,7 @@ $.TokenList = function (input, data, settings) {
     function searchByCategory(query, category){
         
         if(typeof settings.categoryData[category.name] === 'undefined'){ 
-            
+            settings.spinner.removeClass('hide');
             $.ajax({
                 url: category.url,
                 dataType: 'text',
@@ -786,6 +787,7 @@ $.TokenList = function (input, data, settings) {
                     });
                     settings.categoryData[category.name] = json;
                     populate_dropdown(query, results, category);
+                    settings.spinner.addClass('hide');
                 }   
             });
         }else{
