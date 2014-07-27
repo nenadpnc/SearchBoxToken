@@ -22,6 +22,7 @@ var DEFAULT_SETTINGS = {
     categoryList: null,
     isCategorySearch: true,
     categoryData: {},
+    multipleCategoryData: [],
     spinner: null,
 
 	// Display settings
@@ -448,7 +449,6 @@ $.TokenList = function (input, data, settings) {
         $.data(token.get(0), "tokeninput", item);
         
         searchByCategory("", item);
-        
     }
 
     // Inner function to a token to the list
@@ -497,6 +497,13 @@ $.TokenList = function (input, data, settings) {
                     break;
                 }
             } 
+        }else{
+            for(var i = 0; i < settings.multipleCategoryData.length; i++){
+                if(settings.multipleCategoryData[i] === item){
+                    settings.multipleCategoryData.splice(i, 1);
+                    break;
+                }
+            }
         }
         
         populate_dropdown("", settings.categoryList);
@@ -614,6 +621,8 @@ $.TokenList = function (input, data, settings) {
             
             if(typeof token_data.category.multiple === 'undefined' || token_data.multiple === false){
                 settings.categoryList.push(token_data.category);
+            }else{
+                settings.multipleCategoryData.push(token_data.name);
             }
         }
 
@@ -786,12 +795,18 @@ $.TokenList = function (input, data, settings) {
                         return val.toLowerCase().indexOf(query.toLowerCase()) > -1;
                     });
                     settings.categoryData[category.name] = json;
+                    
+                    if(category.multiple){
+                        settings.multipleCategoryData = json;
+                    }
+                    
                     populate_dropdown(query, results, category);
                     settings.spinner.addClass('hide');
                 }   
             });
-        }else{
-            var results = $.grep(settings.categoryData[category.name], function(val){
+        }else{ 
+            var dataList = category.multiple ? settings.multipleCategoryData : settings.categoryData[category.name];
+            var results = $.grep(dataList, function(val){
                 return val.toLowerCase().indexOf(query.toLowerCase()) > -1;
             });
             populate_dropdown(query, results, category);
