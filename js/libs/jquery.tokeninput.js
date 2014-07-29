@@ -245,8 +245,6 @@ $.TokenList = function (input, data, settings) {
             var next_token;
 
             switch(event.keyCode) {
-                case KEY.LEFT:
-                case KEY.RIGHT:
                 case KEY.UP:
                 case KEY.DOWN:
                     var dropdown_item = null;
@@ -273,9 +271,6 @@ $.TokenList = function (input, data, settings) {
                         }
                         settings.tokensToBeSelected = false;
                         return false;
-                    } else if($(this).val().length === 1) {
-                        hide_dropdown();
-                        settings.tokensToBeSelected = false;
                     } else if(prev_data && prev_data.multiple){ 
                         var text = $(this).val().split(' + ');
                         var query = text[text.length - 1].split('');
@@ -831,8 +826,6 @@ $.TokenList = function (input, data, settings) {
         var query = input_box.val().toLowerCase();
 
         if(query && query.length) {
-            
-
             if(query.length >= settings.minChars) {
                 show_dropdown_searching();
                 var prev_token = input_token.prev().data('tokeninput');
@@ -864,6 +857,8 @@ $.TokenList = function (input, data, settings) {
             } else {
                 hide_dropdown();
             }
+        }else{
+            input_box.focus();
         }
     }
     
