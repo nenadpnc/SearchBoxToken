@@ -24,6 +24,8 @@ var DEFAULT_SETTINGS = {
     categoryData: {},
     multipleCategoryData: [],
     spinner: null,
+    tokensToBeSelected: false,
+    selectedMultipleTokens: [],
 
 	// Display settings
     hintText: "Type in a search term",
@@ -80,6 +82,9 @@ var DEFAULT_SETTINGS = {
             return "<li><p>" + item + "</p></li>";
         }
         
+    },
+    multipleTokenFormatter: function(item){
+        return "<li><p>" + item + " +</p></li>";
     },
 
 	// Callbacks
@@ -178,10 +183,10 @@ $.TokenList = function (input, data, settings) {
 
     for(var i = 0; i < data.length; i++){
         arr.push(data[i][settings.propertyToSearch]);
+        if(data[i].multiple){
+            settings['categoryMultiple'] = data[i];
+        }
     }
-    settings.dataList = arr.join(' ');
-
-
     // Build class names
     if(settings.classes) {
         // Use custom class names
@@ -195,7 +200,6 @@ $.TokenList = function (input, data, settings) {
     } else {
         settings.classes = DEFAULT_CLASSES;
     }
-
 
     // Save the tokens
     var saved_tokens = [];
@@ -218,20 +222,22 @@ $.TokenList = function (input, data, settings) {
         .attr("id", settings.idPrefix + input.id)
         .focus(function () {
             if (settings.tokenLimit === null || settings.tokenLimit !== token_count) { 
-                if(token_count < 1){
+                if(input_token.prev().length < 1){
                     show_dropdown_hint();
-                }else{
+                }else{ 
+                    var prev_token = input_token.prev().data('tokeninput');
                     if(settings.isCategorySearch){
                         populate_dropdown("", settings.categoryList);
+                    }else if(prev_token && prev_token.multiple){
+                        populate_dropdown("", settings.multipleCategoryData, settings.categoryMultiple);
                     }else{
-                        searchByCategory("", input_token.prev().data('tokeninput'));
+                        searchByCategory("", prev_token);
                     }
                 }
             }
         })
         .blur(function () {
             hide_dropdown();
-            $(this).val("");
         })
         .bind("keyup keydown blur update", resize_input)
         .keydown(function (event) {
@@ -259,20 +265,44 @@ $.TokenList = function (input, data, settings) {
 
                 case KEY.BACKSPACE:
                     previous_token = input_token.prev();
+                    var prev_data = previous_token.data('tokeninput');
 
-                    if(!$(this).val().length) {
-                        if(selected_token) {
-                            delete_token($(selected_token));
-                            hidden_input.change();
-                        } else if(previous_token.length) {
-                            select_token($(previous_token.get(0)));
+                    if(!$(this).val().length) { 
+                        if(previous_token.length > 0){
+                           delete_token($(previous_token.get(0))); 
                         }
-
+                        settings.tokensToBeSelected = false;
                         return false;
                     } else if($(this).val().length === 1) {
                         hide_dropdown();
+                        settings.tokensToBeSelected = false;
+                    } else if(prev_data && prev_data.multiple){ 
+                        var text = $(this).val().split(' + ');
+                        var query = text[text.length - 1].split('');
+                        query.splice(query.length - 1, 1);
+                        var newQuery = query.join('');
+                        if(settings.selectedMultipleTokens[settings.selectedMultipleTokens.length - 1] === newQuery || newQuery === ''){
+                            var item = settings.selectedMultipleTokens.splice(settings.selectedMultipleTokens.length - 1, 1);
+                            if(settings.selectedMultipleTokens.length === 0){
+                                $(this).val(settings.selectedMultipleTokens.join(' + '));
+                            }else{
+                                $(this).val(settings.selectedMultipleTokens.join(' + ') + ' + ');
+                            }
+
+                            settings.multipleCategoryData.push(item[0]);
+                            populate_dropdown('', settings.multipleCategoryData, prev_data); 
+                            settings.tokensToBeSelected = true;
+                            return false;
+                        }else{ 
+                            var results = $.grep(settings.multipleCategoryData, function(val){
+                                return val.toLowerCase().indexOf(newQuery.toLowerCase()) > -1;
+                            });
+                            populate_dropdown(newQuery, results, prev_data);
+                        }
+                        
                     } else {
                         // set a timeout just long enough to let this function finish.
+                        settings.tokensToBeSelected = false;
                         setTimeout(function(){do_search();}, 5);
                     }
                     break;
@@ -280,14 +310,31 @@ $.TokenList = function (input, data, settings) {
                 case KEY.TAB:
                 case KEY.ENTER:
                 case KEY.NUMPAD_ENTER:
-                case KEY.COMMA:
-                  if(selected_dropdown_item) {
-                    add_token($(selected_dropdown_item).data("tokeninput"), settings.isCategorySearch);
-                    settings.isCategorySearch = settings.isCategorySearch ? false : true;
-                    hidden_input.change();
-                    return false;
+                  if(selected_dropdown_item) { 
+                    handleSelectItem($(selected_dropdown_item).data("tokeninput"));
                   }
+                  return false;
                   break;
+                
+                case KEY.SPACE:
+                    var previous_token = input_token.prev().data('tokeninput');
+                    if(settings.tokensToBeSelected){ 
+                        if(previous_token.multiple){
+                            var text = input_box.val().split(' + ');
+                            var query = text[text.length - 1];
+                            if(settings.selectedMultipleTokens[settings.selectedMultipleTokens.length - 1] === query || query === ''){
+                                addMultipleTokens();
+                            }
+                            settings.isCategorySearch = true;
+                            return false;
+                        }else{
+                            add_token($(this).val(), false);
+                            settings.isCategorySearch = true;
+                            hidden_input.change();
+                            return false;
+                        }
+                    }
+                    break;
 
                 case KEY.ESCAPE:
                   hide_dropdown();
@@ -295,7 +342,12 @@ $.TokenList = function (input, data, settings) {
 
                 default:
                     if(String.fromCharCode(event.which)) {
-                        // set a timeout just long enough to let this function finish.
+                        var prev_data = input_box.prev().data('tokeninput');
+                        if(prev_data && prev_data.multiple){
+                            settings.tokensToBeSelected = true;
+                        }else{
+                            settings.tokensToBeSelected = false;
+                        }
                         setTimeout(function(){do_search();}, 5);
                     }
                     break;
@@ -321,20 +373,7 @@ $.TokenList = function (input, data, settings) {
     // The list to store the token items in
     var token_list = $("<ul />")
         .addClass(settings.classes.tokenList)
-        .click(function (event) {
-            var li = $(event.target).closest("li");
-            if(li && li.get(0) && $.data(li.get(0), "tokeninput")) {
-                toggle_select_token(li);
-            } else {
-                // Deselect selected token
-                if(selected_token) {
-                    deselect_token($(selected_token), POSITION.END);
-                }
-
-                // Focus input box
-                input_box.focus();
-            }
-        }).insertBefore(hidden_input);
+        .insertBefore(hidden_input);
 
     // The token holding the input box
     var input_token = $("<li />")
@@ -438,6 +477,7 @@ $.TokenList = function (input, data, settings) {
         var escaped = input_val.replace(/&/g, '&amp;').replace(/\s/g,' ').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         input_resizer.html(escaped);
         input_box.width(input_resizer.width() + 30);
+        show_dropdown();
     }
     
     function insert_category_token(item){ 
@@ -490,31 +530,101 @@ $.TokenList = function (input, data, settings) {
             hide_dropdown();
         }*/
         
-        if(typeof category.multiple === 'undefined' || category.multiple === false){
-            for(var i = 0; i < settings.categoryList.length; i++){
-                if(settings.categoryList[i].name === category.name){ 
-                    settings.categoryList.splice(i, 1);
-                    break;
-                }
-            } 
-        }else{
-            for(var i = 0; i < settings.multipleCategoryData.length; i++){
-                if(settings.multipleCategoryData[i] === item){
-                    settings.multipleCategoryData.splice(i, 1);
-                    break;
-                }
+        for(var i = 0; i < settings.categoryList.length; i++){
+            if(settings.categoryList[i].name === category.name){ 
+                settings.categoryList.splice(i, 1);
+                break;
             }
-        }
-        
+        } 
         populate_dropdown("", settings.categoryList);
 
         return this_token;
     }
+    
+    function addMultipleTokens(){
+        var category = input_token.prev().data('tokeninput');
+        input_token.prev().remove();
+        input_box.val('');
+        
+        for(var i = 0; i < settings.selectedMultipleTokens.length; i++){
+            var item = settings.selectedMultipleTokens[i];
+            var this_token = settings.tokenFormatter(item);
+            this_token = $(this_token).addClass(settings.classes.token).insertBefore(input_token);
+
+            // The 'delete token' button
+            $("<span>" + settings.deleteText + "</span>")
+                .addClass(settings.classes.tokenDelete)
+                .appendTo(this_token)
+                .click(function () {
+                    delete_token($(this).parent());
+                    hidden_input.change();
+                    return false;
+                });
+
+            // Store data on the token
+            var token_data = {name: item, category: category};
+            $.data(this_token.get(0), "tokeninput", token_data);
+
+            // Save this token for duplicate checking
+            saved_tokens = saved_tokens.slice(0,selected_token_index).concat([token_data]).concat(saved_tokens.slice(selected_token_index));
+            selected_token_index++;
+
+            // Update the hidden input
+            update_hidden_input(saved_tokens, hidden_input);
+
+            token_count += 1;
+            settings.multipleCategoryData.push(item);
+        }
+        settings.selectedMultipleTokens = [];
+        settings.tokensToBeSelected = false;
+        
+        for(var i = 0; i < settings.categoryList.length; i++){
+            if(settings.categoryList[i].name === category.name){ 
+                settings.categoryList.splice(i, 1);
+                break;
+            }
+        } 
+        resize_input();
+        populate_dropdown("", settings.categoryList);
+    };
+    
+    function insertMultipleToken(item){ 
+        if(typeof item === 'undefined') return;
+        var prev_data = input_token.prev().data('tokeninput');
+        
+        for(var i = 0; i < settings.multipleCategoryData.length; i++){
+            if(settings.multipleCategoryData[i] === item){
+                settings.multipleCategoryData.splice(i, 1);
+                break;
+            }
+        }
+        
+        settings.selectedMultipleTokens.push(item);
+        input_box.val(settings.selectedMultipleTokens.join(' + ') + ' + ');
+        settings.tokensToBeSelected = true;
+        
+        populate_dropdown('', settings.multipleCategoryData, prev_data);
+    };
+    
+    function handleSelectItem(item){ 
+        if(!item) return;
+        if(settings.isCategorySearch){
+            add_token(item, true);
+            settings.isCategorySearch = false;
+            hidden_input.change();
+            settings.tokensToBeSelected = false;
+        }else if(input_token.prev().data('tokeninput').multiple){
+            insertMultipleToken(item);
+        }else{
+            input_box.val(item);
+            settings.tokensToBeSelected = true;
+        }
+    };
 
     // Add a token to the token list based on user input
     function add_token (item, isCategorySearch) {
         var callback = settings.onAdd;
-
+        
         // Insert the new tokens
         if(settings.tokenLimit == null || token_count < settings.tokenLimit) { 
             if(isCategorySearch){
@@ -527,60 +637,10 @@ $.TokenList = function (input, data, settings) {
 
         // Clear input box
         input_box.val("");
-
-        // Don't show the help dropdown, they've got the idea
-        //hide_dropdown();
-
+        
         // Execute the onAdd callback if defined
         if($.isFunction(callback)) {
             callback.call(hidden_input,item);
-        }
-    }
-
-    // Select a token in the token list
-    function select_token (token) {
-        token.addClass(settings.classes.selectedToken);
-        selected_token = token.get(0);
-
-        // Hide input box
-        input_box.val("");
-
-        // Hide dropdown if it is visible (eg if we clicked to select token)
-        hide_dropdown();
-    }
-
-    // Deselect a token in the token list
-    function deselect_token (token, position) {
-        token.removeClass(settings.classes.selectedToken);
-        selected_token = null;
-
-        if(position === POSITION.BEFORE) {
-            input_token.insertBefore(token);
-            selected_token_index--;
-        } else if(position === POSITION.AFTER) {
-            input_token.insertAfter(token);
-            selected_token_index++;
-        } else {
-            input_token.appendTo(token_list);
-            selected_token_index = token_count;
-        }
-
-        // Show the input box and give it focus again
-        input_box.focus();
-    }
-
-    // Toggle selection of a token in the token list
-    function toggle_select_token(token) {
-        var previous_selected_token = selected_token;
-
-        if(selected_token) {
-            deselect_token($(selected_token), POSITION.END);
-        }
-
-        if(previous_selected_token === token.get(0)) {
-            deselect_token(token, POSITION.END);
-        } else {
-            select_token(token);
         }
     }
 
@@ -598,11 +658,8 @@ $.TokenList = function (input, data, settings) {
         // Delete the token
         token.remove();
         selected_token = null;
-
-        // Show the input box and give it focus again
-        input_box.focus();
-        
-        if(typeof token_data.isCategory === 'undefined'){
+ 
+        if(!token_data.isCategory){
             // Remove this token from the saved list
             saved_tokens = saved_tokens.slice(0,index).concat(saved_tokens.slice(index+1));
             if(index < selected_token_index) selected_token_index--;
@@ -618,13 +675,24 @@ $.TokenList = function (input, data, settings) {
                     .val("")
                     .focus();
             }*/
-            
-            if(typeof token_data.category.multiple === 'undefined' || token_data.multiple === false){
-                settings.categoryList.push(token_data.category);
+            if(token_data.category.multiple){ 
+                var pom = false;
+                for(var i = 0; i < saved_tokens.length; i++){
+                    if(saved_tokens[i].category.multiple){
+                        pom = true;
+                        break;
+                    }
+                }
+                if(!pom){
+                    settings.categoryList.push(token_data.category);
+                }
             }else{
-                settings.multipleCategoryData.push(token_data.name);
+                settings.categoryList.push(token_data.category);
             }
+            
         }
+        // Show the input box and give it focus again
+        input_box.focus();
 
         // Execute the onDelete callback if defined
         if($.isFunction(callback)) {
@@ -674,7 +742,8 @@ $.TokenList = function (input, data, settings) {
     }
 
     // Highlight the query part of the search term
-    function highlight_term(value, term) {
+    function highlight_term(value, term) { 
+        if(!value) return;
         return value.replace(new RegExp("(?![^&;]+;)(?!<[^<>]*)(" + term + ")(?![^<>]*>)(?![^&;]+;)", "gi"), "<b>$1</b>");
     }
     
@@ -692,10 +761,8 @@ $.TokenList = function (input, data, settings) {
                     select_dropdown_item($(event.target).closest("li"));
                 })
                 .mousedown(function (event) { 
-                    add_token($(event.target).closest("li").data("tokeninput"), settings.isCategorySearch);
-                    settings.isCategorySearch = settings.isCategorySearch ? false : true;
-
-                    hidden_input.change();
+                    handleSelectItem($(event.target).closest("li").data("tokeninput"));
+                    resize_input();
                     return false;
                 })
                 .hide();
@@ -759,18 +826,32 @@ $.TokenList = function (input, data, settings) {
         var query = input_box.val().toLowerCase();
 
         if(query && query.length) {
-            if(selected_token) {
-                deselect_token($(selected_token), POSITION.AFTER);
-            }
+            
 
             if(query.length >= settings.minChars) {
                 show_dropdown_searching();
-                
-                if(settings.isCategorySearch){
+                var prev_token = input_token.prev().data('tokeninput');
+                if(settings.isCategorySearch){ 
+                    for(var i = 0; i < settings.categoryList.length; i++){
+                        if(query.toLowerCase() === settings.categoryList[i][settings.propertyToSearch].toLowerCase()){
+                            add_token(settings.categoryList[i], true);
+                            settings.isCategorySearch = false;
+                            hidden_input.change();
+                            return;
+                        }
+                    }
+                    
                     var results = $.grep(settings.categoryList, function (val) {
                         return val[settings.propertyToSearch].toLowerCase().indexOf(query) > -1;
                     });
                     populate_dropdown(query, results);
+                }else if(prev_token && prev_token.multiple){ 
+                    var arr = query.split(' + ');
+                    var newQuery = arr[arr.length - 1];
+                    var results = $.grep(settings.multipleCategoryData, function (val) {
+                        return val.toLowerCase().indexOf(newQuery) > -1;
+                    });
+                    populate_dropdown(newQuery, results, settings.categoryMultiple);
                 }else{
                     searchByCategory(query, input_token.prev().data('tokeninput'));
                 }
