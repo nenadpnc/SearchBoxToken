@@ -279,9 +279,10 @@ $.TokenList = function (input, data, settings) {
                     } else if(prev_data && prev_data.multiple){ 
                         var text = $(this).val().split(' + ');
                         var query = text[text.length - 1].split('');
+                        var oldQuery = query;
                         query.splice(query.length - 1, 1);
                         var newQuery = query.join('');
-                        if(settings.selectedMultipleTokens[settings.selectedMultipleTokens.length - 1] === newQuery || newQuery === ''){
+                        if(settings.selectedMultipleTokens[settings.selectedMultipleTokens.length - 1] === oldQuery || oldQuery === ''){
                             var item = settings.selectedMultipleTokens.splice(settings.selectedMultipleTokens.length - 1, 1);
                             if(settings.selectedMultipleTokens.length === 0){
                                 $(this).val(settings.selectedMultipleTokens.join(' + '));
