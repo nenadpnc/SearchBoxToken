@@ -640,6 +640,7 @@ $.TokenList = function (input, data, settings) {
 
         // Clear input box
         input_box.val("");
+        settings.tokensToBeSelected = false;
         
         // Execute the onAdd callback if defined
         if($.isFunction(callback)) {
