@@ -373,7 +373,10 @@ $.TokenList = function (input, data, settings) {
     // The list to store the token items in
     var token_list = $("<ul />")
         .addClass(settings.classes.tokenList)
-        .insertBefore(hidden_input);
+        .insertBefore(hidden_input)
+        .click(function(){
+            input_box.focus();
+        });
 
     // The token holding the input box
     var input_token = $("<li />")
