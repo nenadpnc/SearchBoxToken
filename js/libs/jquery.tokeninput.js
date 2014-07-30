@@ -179,14 +179,7 @@ $.TokenList = function (input, data, settings) {
 
     // Set the local data to search through
     settings.categoryList = data;
-    var arr = [];
-
-    for(var i = 0; i < data.length; i++){
-        arr.push(data[i][settings.propertyToSearch]);
-        if(data[i].multiple){
-            settings['categoryMultiple'] = data[i];
-        }
-    }
+    
     // Build class names
     if(settings.classes) {
         // Use custom class names
@@ -207,9 +200,6 @@ $.TokenList = function (input, data, settings) {
     // Keep track of the number of tokens in the list
     var token_count = 0;
 
-    // Basic cache to save on db hits
-    var cache = new $.TokenList.Cache();
-
     // Keep track of the timeout, old vals
     var timeout;
     var input_val;
@@ -229,7 +219,7 @@ $.TokenList = function (input, data, settings) {
                     if(settings.isCategorySearch){
                         populate_dropdown("", settings.categoryList);
                     }else if(prev_token && prev_token.multiple){
-                        populate_dropdown("", settings.multipleCategoryData, settings.categoryMultiple);
+                        populate_dropdown("", settings.multipleCategoryData, prev_token);
                     }else{
                         searchByCategory("", prev_token);
                     }
@@ -249,7 +239,7 @@ $.TokenList = function (input, data, settings) {
                 case KEY.DOWN:
                     var dropdown_item = null;
 
-                    if(event.keyCode === KEY.DOWN || event.keyCode === KEY.RIGHT) {
+                    if(event.keyCode === KEY.DOWN) {
                         dropdown_item = $(selected_dropdown_item).next();
                     } else {
                         dropdown_item = $(selected_dropdown_item).prev();
@@ -274,7 +264,7 @@ $.TokenList = function (input, data, settings) {
                     } else if(prev_data && prev_data.multiple){ 
                         var text = $(this).val().split(' + ');
                         var query = text[text.length - 1].split('');
-                        var oldQuery = query;
+                        var oldQuery = query.join('');
                         query.splice(query.length - 1, 1);
                         var newQuery = query.join('');
                         if(settings.selectedMultipleTokens[settings.selectedMultipleTokens.length - 1] === oldQuery || oldQuery === ''){
@@ -313,8 +303,8 @@ $.TokenList = function (input, data, settings) {
                   break;
                 
                 case KEY.SPACE:
-                    var previous_token = input_token.prev().data('tokeninput');
                     if(settings.tokensToBeSelected){ 
+                        var previous_token = input_token.prev().data('tokeninput');
                         if(previous_token.multiple){
                             var text = input_box.val().split(' + ');
                             var query = text[text.length - 1];
@@ -536,7 +526,6 @@ $.TokenList = function (input, data, settings) {
             }
         } 
         populate_dropdown("", settings.categoryList);
-
         return this_token;
     }
     
@@ -689,7 +678,6 @@ $.TokenList = function (input, data, settings) {
             }else{
                 settings.categoryList.push(token_data.category);
             }
-            
         }
         // Show the input box and give it focus again
         input_box.focus();
@@ -849,7 +837,7 @@ $.TokenList = function (input, data, settings) {
                     var results = $.grep(settings.multipleCategoryData, function (val) {
                         return val.toLowerCase().indexOf(newQuery) > -1;
                     });
-                    populate_dropdown(newQuery, results, settings.categoryMultiple);
+                    populate_dropdown(newQuery, results, prev_token);
                 }else{
                     searchByCategory(query, input_token.prev().data('tokeninput'));
                 }
@@ -893,37 +881,5 @@ $.TokenList = function (input, data, settings) {
             populate_dropdown(query, results, category);
         }
     }
-    
-};
-
-// Really basic cache for the results
-$.TokenList.Cache = function (options) {
-    var settings = $.extend({
-        max_size: 500
-    }, options);
-
-    var data = {};
-    var size = 0;
-
-    var flush = function () {
-        data = {};
-        size = 0;
-    };
-
-    this.add = function (query, results) {
-        if(size > settings.max_size) {
-            flush();
-        }
-
-        if(!data[query]) {
-            size += 1;
-        }
-
-        data[query] = results;
-    };
-
-    this.get = function (query) {
-        return data[query];
-    };
 };
 }(jQuery));
