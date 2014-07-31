@@ -816,8 +816,13 @@ $.TokenList = function (input, data, settings) {
             selected_token_index++;
 
             token_count += 1;
-            if(item[i].category.multiple){
-                settings.multipleCategoryData.push(item[i].name);
+            if(item[i].category.multiple){ 
+                for(var k = 0; k < settings.multipleCategoryData.length; k++){
+                    if(settings.multipleCategoryData[k] !== item[i].name){
+                        settings.multipleCategoryData.push(item[i].name);
+                    }
+                }
+                
             }
             for(var j = 0; j < settings.categoryList.length; j++){
                 if(settings.categoryList[j].name === item[i].category.name){ 
