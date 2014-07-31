@@ -7,13 +7,72 @@ body{
 }
 
 .main{
-    width: 60%;
+    width: 70%;
     padding-top: 100px;
     margin: auto;
     text-align: center;
 }
 
 .input-container{
-    width: 85%;
+    width: 75%;
+}
+
+.spinner{
+    padding: 5px;
+}
+
+.hide{
+    opacity: 0;
+}
+
+.search-btn{
+    font-size: 25px;
     display: inline-block;
+    width: 10px;
+    height: 10px;
+    border: 2px solid grey;
+    position: relative;
+    border-radius: 0.35em;
+    margin: 7px 24px;
+}
+
+.search-btn:before{
+    content: "";
+    display: inline-block;
+    position: absolute;
+    right: -0.25em;
+    bottom: -0.1em;
+    border-width: 0;
+    background: grey;
+    width: 0.35em;
+    height: 0.08em;
+    -webkit-transform: rotate(45deg);
+    -moz-transform: rotate(45deg);
+    -o-trnasform: rotate(45deg);
+    -ms-transform: rotate(45deg);
+    transform: rotate(45deg);
+}
+
+.search-btn-container{
+    cursor: pointer;
+    border: 1px solid grey;
+    border-radius: 5px;
+    margin-left: 10px;
+}
+
+.search-btn-container:hover{
+    border-color: #B6B6B6;
+}
+
+.search-btn-container:hover .search-btn{
+    border-color: #B6B6B6;
+}
+
+.search-btn-container:hover .search-btn:before{
+    background: #B6B6B6;
+}
+
+.inline{
+    display: inline-block;
+    vertical-align: top;
 }

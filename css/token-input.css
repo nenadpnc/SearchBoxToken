@@ -37,7 +37,7 @@ li.token-input-token {
     color: white;
     cursor: default;
     font-size: 14px;
-    border-radius: 15px;
+    border-radius: 5px;
     float: left;
     white-space: nowrap;
 }
@@ -48,9 +48,13 @@ li.token-input-cat{
     color: #5F6369;
 }
 
+li .token-suggestion-color{
+    color: rgb(158, 37, 37);
+}
+
 li.token-input-token p {
     display: inline;
-    padding: 0 15px;
+    padding: 0 20px 0 15px;
     margin: 0;
 }
 
@@ -60,10 +64,9 @@ li.token-input-cat p{
 
 li.token-input-token span {
     color: white;
-    font-weight: bold;
     font-size: 14px;
     cursor: pointer;
-    padding: 0 10px 0 0;
+    padding: 0 9px 0 0;
 }
 
 li.token-input-token span:before{
@@ -110,10 +113,6 @@ div.token-input-dropdown p {
     color: #777;
 }
 
-div.token-input-dropdown p > span{
-    color: red;
-}
-
 div.token-input-dropdown ul {
     margin: 0;
     padding: 0;
@@ -124,6 +123,14 @@ div.token-input-dropdown ul li {
     padding: 3px;
     margin: 0;
     list-style-type: none;
+}
+
+ul.token-hint li{
+    font-size: 14px;
+}
+
+ul.token-hint li > span{
+    color: rgb(158, 37, 37);
 }
 
 div.token-input-dropdown ul li.token-input-dropdown-item {
@@ -140,50 +147,6 @@ div.token-input-dropdown ul li em {
 }
 
 div.token-input-dropdown ul li.token-input-selected-dropdown-item {
-    background-color: #3b5998;
+    background-color: rgb(200, 200, 200);
     color: #fff;
-}
-
-.spinner{
-    padding: 5px;
-}
-
-.hide{
-    opacity: 0;
-}
-
-.search-btn{
-    font-size: 25px;
-    display: inline-block;
-    width: 0.4em;
-    height: 0.4em;
-    border: 0.1em solid grey;
-    position: relative;
-    border-radius: 0.35em;
-    margin: 12px 15px;
-}
-
-.search-btn:before{
-    content: "";
-    display: inline-block;
-    position: absolute;
-    right: -0.25em;
-    bottom: -0.1em;
-    border-width: 0;
-    background: grey;
-    width: 0.35em;
-    height: 0.08em;
-    -webkit-transform: rotate(45deg);
-    -moz-transform: rotate(45deg);
-    -o-trnasform: rotate(45deg);
-    -ms-transform: rotate(45deg);
-    transform: rotate(45deg);
-}
-
-.search-btn-container{
-    display: inline-block;
-    cursor: pointer;
-    border: 1px solid grey;
-    border-radius: 5px;
-    margin-left: 10px;
 }
