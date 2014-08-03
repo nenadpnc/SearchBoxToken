@@ -84,7 +84,6 @@
         for(var i = 0; i < tokens.length; i++){
             message += tokens[i].category.name + ': ' + tokens[i].name + ', ';
         }
-        searchBox.tokenInput('clear');
         alert(message);
     });
     
