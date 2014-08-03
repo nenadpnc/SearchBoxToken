@@ -35,10 +35,6 @@
             },
             {
                 category: { name: 'where I can', url: 'data/todo.json', multiple: true },
-                name: 'visit museums'
-            },
-            {
-                category: { name: 'where I can', url: 'data/todo.json', multiple: true },
                 name: 'go out'
             }
         ],
@@ -75,7 +71,7 @@
     var searchBox = $('#search_box').tokenInput(
         categoryList,
         {
-            hintText: '<li>in <span>France</span>, landform <span>coast</span>, temperature <span>mild</span>, where I can <span>visit museums + go out</span></li><li>temperature <span>hot</span>, where I can <span>eat gourmet food</span>, related to <span>Harry Potter</span></li><li>where I can <span>do wine tasting</span>, in <span>Tuscany</span>, temperature <span>hot</span></li>',
+            hintText: '<li>in <span>France</span>, landform <span>coast</span>, temperature <span>mild</span>, where I can <span>go out</span></li><li>temperature <span>hot</span>, where I can <span>eat gourmet food</span>, related to <span>Harry Potter</span></li><li>where I can <span>do wine tasting</span>, in <span>Tuscany</span>, temperature <span>hot</span></li>',
             objectExample: examples,
             spinner: $('.spinner'),
             suggestionTextClass: 'token-suggestion-color'
@@ -88,6 +84,7 @@
         for(var i = 0; i < tokens.length; i++){
             message += tokens[i].category.name + ': ' + tokens[i].name + ', ';
         }
+        searchBox.tokenInput('clear');
         alert(message);
     });
     
