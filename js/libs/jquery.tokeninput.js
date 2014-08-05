@@ -13,16 +13,18 @@
     var DEFAULT_SETTINGS = {
         // Search settings
         minChars: 1,
+        searchDelay: 300,
         propertyToSearch: "name",
         jsonContainer: null,
         categoryList: null,
         isCategorySearch: true,
-        categoryData: {},
+        categoryData: [],
         multipleCategoryData: [],
         spinner: null,
         tokensToBeSelected: false,
         selectedMultipleTokens: [],
         objectExample: null,
+        url: '',
 
         // Display settings
         hintText: "Type in a search term",
@@ -218,7 +220,7 @@
                             }
                             populate_dropdown("", settings.multipleCategoryData, prev_token);
                         } else {
-                            searchByCategory("", prev_token);
+                            searchCurrentCategory("", prev_token);
                         }
                     }
                 }
@@ -291,8 +293,8 @@
                             return false;
                         }
                         
-                    } else if (previous_token && typeof settings.categoryData[previous_token.name] !== 'undefined') {
-                        var data = settings.categoryData[previous_token.name],
+                    } else if (previous_token && settings.categoryData.length > 0) {
+                        var data = settings.categoryData,
                             length = data.length,
                             query = input_box.val().toLowerCase();
 
@@ -470,7 +472,7 @@
 
             item["isCategory"] = true;
             $.data(token.get(0), "tokeninput", item);
-
+            
             searchByCategory("", item);
         }
 
@@ -816,9 +818,8 @@
                         });
                         populate_dropdown(query, results, prev_token);
                     } else {
-                        searchByCategory(query, input_token.prev().data('tokeninput'));
+                        searchCurrentCategory(query, prev_token);
                     }
-
                 } else {
                     hide_dropdown();
                 }
@@ -828,46 +829,52 @@
         }
 
         function searchByCategory(query, category) {
+            var tokensString = $.map(saved_tokens, function(item, i){
+                return item.category.name + ' ' + item.name;
+            });
+            
+            var queryData = tokensString.join(' ') + ' ' + category.name + ' ' + query;
 
-            if (typeof settings.categoryData[category.name] === 'undefined') {
-                settings.spinner.removeClass('hide');
-                $.ajax({
-                    url: category.url,
-                    dataType: 'text',
-                    success: function (data) {
-                        var json = typeof data === 'string' ? JSON.parse(data) : data;
+            settings.spinner.removeClass('hide');
+            $.ajax({
+                url: settings.url,
+                data: { query: queryData },
+                dataType: 'text',
+                success: function (data) {
+                    var json = typeof data === 'string' ? JSON.parse(data) : data;
 
-                        var results = $.grep(json, function (val) {
-                            return val.toLowerCase().indexOf(query.toLowerCase()) > -1;
-                        });
-                        settings.categoryData[category.name] = json;
+                    var results = $.grep(json, function (val) {
+                        return val.toLowerCase().indexOf(query.toLowerCase()) > -1;
+                    });
+                    settings.categoryData = json;
 
-                        if (category.multiple) {
-                            settings.multipleCategoryData = json;
-                            for(var i = 0; i < saved_tokens.length; i++){
-                                if(saved_tokens[i].category.multiple){
-                                    for(var j = 0; j < settings.multipleCategoryData.length; j++){
-                                        if(settings.multipleCategoryData[j] === saved_tokens[i].name){
-                                            settings.multipleCategoryData.splice(j, 1);
-                                            break;
-                                        }
+                    if (category.multiple) {
+                        settings.multipleCategoryData = json;
+                        for(var i = 0; i < saved_tokens.length; i++){
+                            if(saved_tokens[i].category.multiple){
+                                for(var j = 0; j < settings.multipleCategoryData.length; j++){
+                                    if(settings.multipleCategoryData[j] === saved_tokens[i].name){
+                                        settings.multipleCategoryData.splice(j, 1);
+                                        break;
                                     }
                                 }
                             }
-                            populate_dropdown(query, settings.multipleCategoryData, category);
-                        }else{
-                            populate_dropdown(query, results, category);
                         }
-                        settings.spinner.addClass('hide');
+                        populate_dropdown(query, settings.multipleCategoryData, category);
+                    }else{
+                        populate_dropdown(query, results, category);
                     }
-                });
-            } else {
-                var dataList = category.multiple ? settings.multipleCategoryData : settings.categoryData[category.name];
-                var results = $.grep(dataList, function (val) {
-                    return val.toLowerCase().indexOf(query.toLowerCase()) > -1;
-                });
-                populate_dropdown(query, results, category);
-            }
+                    settings.spinner.addClass('hide');
+                }
+            });
         }
+        
+        function searchCurrentCategory(query, category){
+            var dataList = category.multiple ? settings.multipleCategoryData : settings.categoryData;
+            var results = $.grep(dataList, function (val) {
+                return val.toLowerCase().indexOf(query.toLowerCase()) > -1;
+            });
+            populate_dropdown(query, results, category);
+        };
     };
 }(jQuery));
